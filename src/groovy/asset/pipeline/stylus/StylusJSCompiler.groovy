@@ -28,7 +28,7 @@ class StylusJSCompiler {
       def shellJsResource = new ClassPathResource('asset/pipeline/stylus/shell.js', classLoader)
       def envRhinoJsResource = new ClassPathResource('asset/pipeline/stylus/env.rhino.js', classLoader)
       def hooksJsResource = new ClassPathResource('asset/pipeline/stylus/hooks.js', classLoader)
-      def stylusJsResource = new ClassPathResource('asset/pipeline/stylus/stylus.min.js', classLoader)
+      def stylusJsResource = new ClassPathResource('asset/pipeline/stylus/stylus.js', classLoader)
       def compileJsResource = new ClassPathResource('asset/pipeline/stylus/compile.js', classLoader)
       
       Context cx = Context.enter()

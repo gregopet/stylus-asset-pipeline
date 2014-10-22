@@ -28,6 +28,7 @@ class StylusJSCompiler {
       def shellJsResource = new ClassPathResource('asset/pipeline/stylus/shell.js', classLoader)
       def envRhinoJsResource = new ClassPathResource('asset/pipeline/stylus/env.rhino.js', classLoader)
       def hooksJsResource = new ClassPathResource('asset/pipeline/stylus/hooks.js', classLoader)
+      def fileSupportResource = new ClassPathResource('asset/pipeline/stylus/fileFuncs.js', classLoader)
       def stylusJsResource = new ClassPathResource('asset/pipeline/stylus/stylus.js', classLoader)
       def compileJsResource = new ClassPathResource('asset/pipeline/stylus/compile.js', classLoader)
       
@@ -38,6 +39,7 @@ class StylusJSCompiler {
         this.evaluateJavascript(cx, shellJsResource)
         this.evaluateJavascript(cx, envRhinoJsResource)
         this.evaluateJavascript(cx, hooksJsResource)
+        this.evaluateJavascript(cx, fileSupportResource)
         this.evaluateJavascript(cx, stylusJsResource)
         this.evaluateJavascript(cx, compileJsResource)
       } finally {
@@ -54,7 +56,7 @@ class StylusJSCompiler {
     context.evaluateReader(globalScope, new InputStreamReader(inputStream, 'UTF-8'), resource.filename, 0, null)
 
   }
-
+  
   public def process (String input, AssetFile assetFile) {
     try {
       if (!this.precompilerMode) {
@@ -120,10 +122,15 @@ class StylusJSCompiler {
   static void print(text) {
     log.debug text
   }
-
-  static String resolveUri(String path, NativeArray paths) {
+  
+  static String readTextFile(String path, String encoding) {
+	new File(path).getText(encoding)
+  }
+  
+  static NativeArray resolveUri(String path, NativeArray paths) {
     def assetFile = threadLocal.get();
     log.debug "resolveUri: path=${path}"
+    def foundFiles = new HashSet()
     for (Object index : paths.getIds()) {
       def it = paths.get(index, null)
       def file = new File(it, path)
@@ -133,11 +140,13 @@ class StylusJSCompiler {
         if (assetFile) {
           CacheManager.addCacheDependency(assetFile.file.canonicalPath, file)
         }
-        return file.toURI().toString()
+        foundFiles << file.toString()
       }
     }
-
-    return null
+	
+	def array = new NativeArray(foundFiles.toArray())
+	array.prototype = paths.prototype
+    return array
   }
   
   def relativePath(file, includeFileName = false) {

@@ -4,6 +4,10 @@ Error.captureStackTrace = function(context, error) {
 };
 
 var compile = function(fileText, paths) {
+	
+	//set global paths for looking for files
+	globalPaths = paths
+	
 	var errors, parsed
 	stylus(fileText).render(function (err, str) {
 		errors = err;

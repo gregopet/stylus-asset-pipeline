@@ -27,6 +27,11 @@ var pathToSingleFile = function(path) {
 // Creates a Node.js fs.Stats compatible object with just the fields required by Stylus
 // see http://nodejs.org/api/fs.html#fs_class_fs_stats
 var fStatSync = function(file) {
+	if (!file || !file.exists()) {
+		//java.lang.System.out.println("fStatSync FAILED TO FIND FILE " + file);
+		return null
+	}
+	
 	return {
 		isFile: function() { return file.isFile() },
 		mtime: new Date( file.lastModified() ),
@@ -51,7 +56,7 @@ var fs = {
 	},
 	readFileSync : function(path, encoding) {
 		var file = pathToSingleFile(path)
-		if (!file) return null
+		if (!file) throw new Error("File " + path + " does not exist!")
 		if (encoding) {
 			//return text
 			//java.lang.System.out.println("readFileSync CALLED FOR TEXT FILE " + path)

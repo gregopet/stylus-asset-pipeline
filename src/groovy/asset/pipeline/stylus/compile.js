@@ -1,6 +1,6 @@
 // Prevent a Rhino exception
 Error.captureStackTrace = function(context, error) { 
-  throw new Error(context) ;
+  //throw new Error(error);
 };
 
 var compile = function(fileText, sourceFile, paths) {

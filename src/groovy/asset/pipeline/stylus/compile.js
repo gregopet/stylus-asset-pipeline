@@ -18,5 +18,5 @@ var compile = function(fileText, sourceFile, paths) {
 		Packages.asset.pipeline.stylus.StylusJSCompiler.print("Error parsing Stylus file: \n" + errors.message);
 		throw errors;
 	}
-    return parsed;
+	return parsed;
 };

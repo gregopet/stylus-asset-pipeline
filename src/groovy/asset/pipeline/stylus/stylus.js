@@ -9420,7 +9420,6 @@ Parser.prototype = {
       case 'literal':
       case 'charset':
       case 'namespace':
-      case 'import':
       case 'require':
       case 'extend':
       case 'media':

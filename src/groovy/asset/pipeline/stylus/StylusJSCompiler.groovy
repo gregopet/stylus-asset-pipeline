@@ -165,6 +165,7 @@ class StylusJSCompiler {
 	/**
 	 * Finds an asset URI in the local folders.
 	 * TODO: support wildcard searches as defined in the Stylus documentation.
+	 * @return An array of File objects.
 	 */
 	static NativeArray resolveUri(String path, NativeArray paths) {
 		log.trace "Resolving asset(s) by path: $path"
@@ -184,7 +185,7 @@ class StylusJSCompiler {
 			}
 		}
 		
-		def array = new NativeArray(foundFiles.toArray())
+		def array = new NativeArray(foundFiles.collect{new File(it)}.toArray())
 		array.prototype = paths.prototype
 		return array
 	}

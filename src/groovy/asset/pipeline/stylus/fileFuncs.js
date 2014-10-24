@@ -6,7 +6,11 @@ var glob = {
 		//java.lang.System.out.println("GLOB WAS CALLED: " + path + " (" + globalPaths + ")");
 		var files = Packages.asset.pipeline.stylus.StylusJSCompiler.resolveUri(path, globalPaths);
 		//java.lang.System.out.println("FOUND FILES: " + files + " ;length is " + files.length);
-		return files;
+		var paths = []
+		for (var a = 0; a < files.length; a++) {
+			paths.push(files[a].getName())
+		}
+		return paths;
 	}
 }
 
@@ -14,7 +18,7 @@ var glob = {
 var pathToSingleFile = function(path) {
 	var files = Packages.asset.pipeline.stylus.StylusJSCompiler.resolveUri(path, globalPaths)
 	if (files.length > 0) {
-		return new java.io.File(files[0])
+		return files[0]
 	} else {
 		return null
 	}
@@ -26,7 +30,7 @@ var fStatSync = function(file) {
 	return {
 		isFile: function() { return file.isFile() },
 		mtime: new Date( file.lastModified() ),
-		size : 200 //file.size()
+		size : file.length()
 	}
 }
 
@@ -69,7 +73,9 @@ var fs = {
 	},
 	openSync : function(path) {
 		//java.lang.System.out.println("openSync CALLED FOR FILE " + path)
-		return pathToSingleFile(path)
+		var file = pathToSingleFile(path)
+		if (!file) throw new Error("File " + path + " does not exist!")
+		return file
 	},
 	closeSync : function(file) {
 		//java.lang.System.out.println("closeSync CALLED FOR FILE " + file)

@@ -5,11 +5,11 @@ var glob = {
 	sync : function(path) {
 		//java.lang.System.out.println("GLOB WAS CALLED: " + path + " (" + globalPaths + ")");
 		var files = Packages.asset.pipeline.stylus.StylusJSCompiler.resolveUri(path, globalPaths);
-		//java.lang.System.out.println("FOUND FILES: " + files + " ;length is " + files.length);
 		var paths = []
 		for (var a = 0; a < files.length; a++) {
 			paths.push(files[a].getName())
 		}
+		//java.lang.System.out.println("FOUND FILES: " + paths + " ;length is " + paths.length);
 		return paths;
 	}
 }
@@ -41,6 +41,7 @@ var fs = {
 		if (file) {
 			return fStatSync(file)
 		} else {
+			//java.lang.System.out.println("statSync FAILED TO FIND FILE");
 			return null
 		}
 	},

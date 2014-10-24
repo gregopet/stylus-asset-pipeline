@@ -20,7 +20,7 @@
 	<h1>Stylus plugin functionality test</h1>
 	<div class="basic">basic functionality:</div>
 	<div class="import">import a file:</div>
-	<div class="include">include a file:</div>
+	<div class="require">require a file:</div>
 	<div class="tux">sample image dimensions:</div>
 </body>
 </html>

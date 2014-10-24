@@ -4,11 +4,23 @@
 	<meta charset="UTF-8">
 	<title>Asset Pipeline Stylus plugin</title>
 	<asset:stylesheet href="style.css"/>
+	<style>
+		body>* {
+			width: 300px
+		}
+		
+		body>div::after {
+			content: 'BROKEN';
+			color: red;
+			float: right
+		}
+	</style>
 </head>
 <body>
-	<div class="basic">BASIC</div>
-	<div class="import">IMPORT</div>
-	<p>Here is tux:</p>
-	<div class="tux"></div>
+	<h1>Stylus plugin functionality test</h1>
+	<div class="basic">basic functionality:</div>
+	<div class="import">import a file:</div>
+	<div class="include">include a file:</div>
+	<div class="tux">sample image dimensions:</div>
 </body>
 </html>

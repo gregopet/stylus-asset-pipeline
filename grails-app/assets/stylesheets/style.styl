@@ -1,8 +1,10 @@
-//@include "imports"
-width(img)
-    return image-size(img)[0]
+//@include "includes"
+@import "imports"
 
-.basic
-	background-color: green
-	
-image-size('tux.png')[0] == 233
+.basic::after
+	content: 'OK'
+	color: green
+
+.tux::after
+	content: \"image-size('tux.png')\"
+	color: green

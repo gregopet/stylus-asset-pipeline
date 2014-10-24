@@ -123,31 +123,8 @@ class StylusJSCompiler {
     log.debug text
   }
   
-  static String readTextFile(String path, String encoding) {
-	new File(path).getText(encoding)
-  }
   
-  static NativeArray resolveUri(String path, NativeArray paths) {
-    def assetFile = threadLocal.get();
-    log.debug "resolveUri: path=${path}"
-    def foundFiles = new HashSet()
-    for (Object index : paths.getIds()) {
-      def it = paths.get(index, null)
-      def file = new File(it, path)
-      log.trace "test exists: ${file}"
-      if (file.exists()) {
-        log.trace "found file: ${file}"
-        if (assetFile) {
-          CacheManager.addCacheDependency(assetFile.file.canonicalPath, file)
-        }
-        foundFiles << file.toString()
-      }
-    }
 	
-	def array = new NativeArray(foundFiles.toArray())
-	array.prototype = paths.prototype
-    return array
-  }
   
   def relativePath(file, includeFileName = false) {
     def path
@@ -173,4 +150,64 @@ class StylusJSCompiler {
 
     return path.join(AssetHelper.DIRECTIVE_FILE_SEPARATOR)
   }
+	/**
+	 * Read a text file using the specified encoding and return it as a String.
+	 */
+	static String readTextFile(File file, String encoding) {
+		log.trace "Reading contents of text file (opened via file ${file})"
+		file.getText(encoding)
+	}
+
+	/**
+	 * Read a binary file and return it as a Javascript native array.
+	 * If position or length are defined, read only part of the file; else read the entire thing.
+	 * HACK: to be fully compliant the function should return the number of bytes read but it does not seem to matter for now!
+	 */
+	static NativeArray readFile(File file, Integer position, Integer length, NativeArray sampleArray) {
+		log.trace "Reading contents of binary file (opened via the File instance file)"
+		
+		def buffer
+		if (position || length) {
+			buffer = new byte[length]
+			file.withInputStream { InputStream stream -> 
+				stream.skip(position)
+				stream.read(buffer, 0, length)
+			}
+		} else {
+			buffer = file.bytes
+		}
+		
+		def unsignedByteArray = buffer.collect { it & 0xFF }.toArray()
+		def returnArray = new NativeArray(unsignedByteArray)
+		returnArray.prototype = sampleArray.prototype
+		return returnArray
+	}
+
+	/**
+	 * Finds an asset URI in the local folders.
+	 * TODO: support wildcard searches as defined in the Stylus documentation.
+	 */
+	static NativeArray resolveUri(String path, NativeArray paths) {
+		log.trace "Resolving asset(s) by path: $path"
+		def assetFile = threadLocal.get();
+		log.debug "resolveUri: path=${path}"
+		def foundFiles = new HashSet()
+		for (Object index : paths.getIds()) {
+			def it = paths.get(index, null)
+			def file = new File(it, path)
+			log.trace "test exists: ${file}"
+			if (file.exists()) {
+				log.trace "found file: ${file}"
+				if (assetFile) {
+				CacheManager.addCacheDependency(assetFile.file.canonicalPath, file)
+				}
+				foundFiles << file.canonicalPath
+			}
+		}
+		
+		def array = new NativeArray(foundFiles.toArray())
+		array.prototype = paths.prototype
+		return array
+	}
+
 }

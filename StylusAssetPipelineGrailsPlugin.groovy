@@ -2,7 +2,7 @@ import asset.pipeline.AssetHelper
 import asset.pipeline.stylus.StylusAssetFile
 
 class StylusAssetPipelineGrailsPlugin {
-	def version = "0.1"
+	def version = "0.8"
 	def grailsVersion = "2.0 > *"
 
 	def title = "Stylus Asset Pipeline Plugin"

@@ -1,6 +1,10 @@
 //Array is a close enough representation of the Node Buffer..
 Buffer = Array
 
+
+//define a node.js global
+__dirname = "."
+
 var glob = {
 	sync : function(path) {
 		//java.lang.System.out.println("GLOB WAS CALLED: " + path + " (" + globalPaths + ")");

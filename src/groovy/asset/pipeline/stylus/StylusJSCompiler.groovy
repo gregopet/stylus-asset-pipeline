@@ -86,7 +86,6 @@ class StylusJSCompiler {
         def compileScope = cx.newObject(globalScope)
         compileScope.setParentScope(globalScope)
         compileScope.put("stylusSrc", compileScope, input)
-        def result = cx.evaluateString(compileScope, "compile(stylusSrc, ${pathstext})", "Stylus compile command", 0, null)
         return result
       } finally {
         Context.exit()
@@ -99,6 +98,8 @@ class StylusJSCompiler {
         errorDetails += "**Did you mean to compile this file individually (check docs on exclusion)?**\n"
       }
       if (errorMeta && errorMeta.get('message')) {
+			compileScope.put("sourceFile", compileScope, assetFile.file.canonicalPath)
+			def result = cx.evaluateString(compileScope, "compile(stylusSrc, sourceFile, ${pathstext})", "Stylus compile command", 0, null)
 
         //errorDetails += " -- ${errorMeta.get('message')} Near Line: ${errorMeta.line}, Column: ${errorMeta.column}\n"
         errorDetails += " -- ${errorMeta.get('message')}\n"

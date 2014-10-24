@@ -3,13 +3,13 @@ Error.captureStackTrace = function(context, error) {
   throw new Error(context) ;
 };
 
-var compile = function(fileText, paths) {
+var compile = function(fileText, sourceFile, paths) {
 	
 	//set global paths for looking for files
 	globalPaths = paths
 	
 	var errors, parsed
-	stylus(fileText).render(function (err, str) {
+	stylus(fileText).set('filename', sourceFile).render(function (err, str) {
 		errors = err;
 		parsed = str
 	})

@@ -203,7 +203,7 @@ class StylusJSCompiler {
 	 */
 	static File getExistingFile(String existingPath, NativeArray paths) {
 		def hits = resolveUri(existingPath, paths, true)
-		if (!hits.length) throw new RuntimeException("File $existingPath was expected to exist but it was not found!")
+		if (!hits.length) return null
 		else return new File(hits.get(0))
 	}
 	
@@ -212,7 +212,8 @@ class StylusJSCompiler {
 	 */
 	static def fStat(String existingPath, NativeArray paths) {
 		def file = getExistingFile(existingPath, paths)
-		[
+		if (!file) return null
+		else return [
 			isFile : file.isFile(),
 			mtime : file.lastModified(),
 			size : file.length()

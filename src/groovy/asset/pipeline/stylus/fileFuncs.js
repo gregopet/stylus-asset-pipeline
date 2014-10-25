@@ -28,10 +28,12 @@ var pathToSingleFile = function(path) {
 // see http://nodejs.org/api/fs.html#fs_class_fs_stats
 // TODO: move into Groovy code!
 var fStatSync = function(existingPath) {
+	if (!existingPath) throw "File " + existingPath + " not found!"
 	//java.lang.System.out.println("fstatSync (internal) CALLED FOR PATH " + existingPath);
 	var descriptor = Packages.asset.pipeline.stylus.StylusJSCompiler.fStat(existingPath, globalPaths)
-	//java.lang.System.out.println("fstatSync (internal) GOT OBJECT!");
-	return {
+	//java.lang.System.out.println("fstatSync (internal) GOT OBJECT " + descriptor);
+	if (!descriptor) throw "File " + existingPath + " not found!"
+	else return {
 		isFile: function() { return descriptor.isFile },
 		mtime: new Date( descriptor.mtime ),
 		size : descriptor.size
@@ -47,7 +49,7 @@ var fs = {
 			return fStatSync(existingPath)
 		} else {
 			//java.lang.System.out.println("statSync FAILED TO FIND FILE " + path);
-			return null
+			throw "File " + existingPath + " not found!"
 		}
 	},
 	fstatSync : function(existingPath) {
@@ -56,7 +58,7 @@ var fs = {
 	},
 	readFileSync : function(path, encoding) {
 		var existingPath = pathToSingleFile(path)
-		if (!existingPath) throw new Error("File " + path + " does not exist!")
+		if (!existingPath) throw new Error("(readFileSync) File " + path + " does not exist!")
 		if (encoding) {
 			//return text
 			//java.lang.System.out.println("readFileSync CALLED FOR TEXT FILE " + path)
@@ -80,7 +82,10 @@ var fs = {
 	openSync : function(path) {
 		//java.lang.System.out.println("openSync CALLED FOR FILE " + path)
 		var existingPath = pathToSingleFile(path)
-		if (!existingPath) throw new Error("File " + path + " does not exist!")
+		if (!existingPath) {
+			//java.lang.System.out.println("openSync COULD NOT FIND FILE " + path + ", THROWING JS EXCEPTION")
+			throw new Error("File " + path + " does not exist!")
+		}
 		return existingPath
 	},
 	closeSync : function(existingPath) {

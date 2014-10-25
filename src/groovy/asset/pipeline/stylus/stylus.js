@@ -2505,7 +2505,8 @@ require.register("functions/image.js", function(module, exports, require){
  */
 
 var utils = require('../utils')
-  , nodes = require('../nodes');
+  , nodes = require('../nodes')
+  , path  = require('path');
 
 /**
  * Initialize a new `Image` with the given `ctx` and `path.
@@ -9420,7 +9421,6 @@ Parser.prototype = {
       case 'literal':
       case 'charset':
       case 'namespace':
-      case 'import':
       case 'require':
       case 'extend':
       case 'media':
@@ -11475,7 +11475,8 @@ require.register("utils.js", function(module, exports, require){
  */
 
 var nodes = require('./nodes')
-  , join = require('./path').join;
+  , join = require('./path').join
+  , path = require('./path');
 
 /**
  * Check if `path` looks absolute.
@@ -11502,16 +11503,16 @@ exports.absolute = function(path){
  * @api private
  */
 
-exports.lookup = function(path, paths, ignore, resolveURL){
+exports.lookup = function(targetPath, paths, ignore, resolveURL){
   var lookup
-    , method = resolveURL ? resolve : join
+    , method = resolveURL ? path.resolve : path.join
     , i = paths.length;
 
   // Absolute
-  if (exports.absolute(path)) {
+  if (exports.absolute(targetPath)) {
     try {
-      // fs.statSync(path);
-      return path;
+      // fs.statSync(targetPath);
+      return targetPath;
     } catch (err) {
       // Ignore, continue on
       // to trying relative lookup.
@@ -11523,7 +11524,7 @@ exports.lookup = function(path, paths, ignore, resolveURL){
   // Relative
   while (i--) {
     try {
-      lookup = method(paths[i], path);
+      lookup = method(paths[i], targetPath);
       if (ignore == lookup) continue;
       // fs.statSync(lookup);
       return lookup;
@@ -11577,7 +11578,7 @@ exports.lookupIndex = function(name, paths, filename){
   var found = exports.find(join(name, 'index.styl'), paths, filename);
   if (!found) {
     // foo/foo.styl
-    found = exports.find(join(name, basename(name).replace(/\.styl/i, '') + '.styl'), paths, filename);
+    found = exports.find(join(name, path.basename(name).replace(/\.styl/i, '') + '.styl'), paths, filename);
   }
   if (!found && !~name.indexOf('node_modules')) {
     // node_modules/foo/.. or node_modules/foo.styl/..
@@ -11590,7 +11591,7 @@ exports.lookupIndex = function(name, paths, filename){
     if (!package) {
       return /\.styl$/i.test(dir) ? exports.lookupIndex(dir, paths, filename) : lookupPackage(dir + '.styl');
     }
-    var main = require(relative(__dirname, package)).main;
+    var main = require(path.relative(__dirname, package)).main;
     if (main) {
       found = exports.find(join(dir, main), paths, filename);
     } else {

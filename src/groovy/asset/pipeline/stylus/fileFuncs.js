@@ -1,12 +1,20 @@
 //Array is a close enough representation of the Node Buffer..
 Buffer = Array
 
+
+//define a node.js global
+__dirname = "."
+
 var glob = {
 	sync : function(path) {
 		//java.lang.System.out.println("GLOB WAS CALLED: " + path + " (" + globalPaths + ")");
 		var files = Packages.asset.pipeline.stylus.StylusJSCompiler.resolveUri(path, globalPaths);
-		//java.lang.System.out.println("FOUND FILES: " + files + " ;length is " + files.length);
-		return files;
+		var paths = []
+		for (var a = 0; a < files.length; a++) {
+			paths.push(files[a].getName())
+		}
+		//java.lang.System.out.println("FOUND FILES: " + paths + " ;length is " + paths.length);
+		return paths;
 	}
 }
 
@@ -14,7 +22,7 @@ var glob = {
 var pathToSingleFile = function(path) {
 	var files = Packages.asset.pipeline.stylus.StylusJSCompiler.resolveUri(path, globalPaths)
 	if (files.length > 0) {
-		return new java.io.File(files[0])
+		return files[0]
 	} else {
 		return null
 	}
@@ -23,10 +31,15 @@ var pathToSingleFile = function(path) {
 // Creates a Node.js fs.Stats compatible object with just the fields required by Stylus
 // see http://nodejs.org/api/fs.html#fs_class_fs_stats
 var fStatSync = function(file) {
+	if (!file || !file.exists()) {
+		//java.lang.System.out.println("fStatSync FAILED TO FIND FILE " + file);
+		return null
+	}
+	
 	return {
 		isFile: function() { return file.isFile() },
 		mtime: new Date( file.lastModified() ),
-		size : 200 //file.size()
+		size : file.length()
 	}
 }
 
@@ -37,6 +50,7 @@ var fs = {
 		if (file) {
 			return fStatSync(file)
 		} else {
+			//java.lang.System.out.println("statSync FAILED TO FIND FILE");
 			return null
 		}
 	},
@@ -46,7 +60,7 @@ var fs = {
 	},
 	readFileSync : function(path, encoding) {
 		var file = pathToSingleFile(path)
-		if (!file) return null
+		if (!file) throw new Error("File " + path + " does not exist!")
 		if (encoding) {
 			//return text
 			//java.lang.System.out.println("readFileSync CALLED FOR TEXT FILE " + path)
@@ -69,7 +83,9 @@ var fs = {
 	},
 	openSync : function(path) {
 		//java.lang.System.out.println("openSync CALLED FOR FILE " + path)
-		return pathToSingleFile(path)
+		var file = pathToSingleFile(path)
+		if (!file) throw new Error("File " + path + " does not exist!")
+		return file
 	},
 	closeSync : function(file) {
 		//java.lang.System.out.println("closeSync CALLED FOR FILE " + file)

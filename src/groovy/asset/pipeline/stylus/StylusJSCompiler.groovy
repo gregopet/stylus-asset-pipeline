@@ -4,6 +4,7 @@ import groovy.util.logging.Log4j
 
 import org.mozilla.javascript.Context
 import org.mozilla.javascript.RhinoException
+import org.mozilla.javascript.JavaScriptException
 import org.mozilla.javascript.NativeArray
 import org.mozilla.javascript.Scriptable
 import org.springframework.core.io.ClassPathResource
@@ -92,15 +93,14 @@ class StylusJSCompiler {
 			} finally {
 				Context.exit()
 			}
-		} catch (RhinoException e) {
-			log.error  "JAVASCRIPT EXCEPTION\n " + e.scriptStackTrace
-			//e.rhinoException.printStackTrace()
-			/*def errorMeta =  e.value
+		} catch (JavaScriptException e) {
+			def errorMeta =  e.value
 
 			def errorDetails = "Stylus Engine Compiler Failed - ${assetFile.file.name}.\n"
 			if (precompilerMode) {
 				errorDetails += "**Did you mean to compile this file individually (check docs on exclusion)?**\n"
 			}
+			errorDetails += e.scriptStackTrace
 			if (errorMeta && errorMeta.get('message')) {
 
 				//errorDetails += " -- ${errorMeta.get('message')} Near Line: ${errorMeta.line}, Column: ${errorMeta.column}\n"
@@ -112,8 +112,14 @@ class StylusJSCompiler {
 				return input
 			} else {
 				throw new Exception(errorDetails, e)
-			}*/
-
+			}
+		}
+		catch (RhinoException e) {
+			log.error  "RHINO EXCEPTION\n " + e.scriptStackTrace
+			throw new Exception("""
+				Stylus Engine compilation of Stylus to CSS failed.
+				$e
+				""")
 		} catch (Exception e) {
 			println "CAUGHT EXCEPTION OF TYPE " + e.getClass()
 			throw new Exception("""

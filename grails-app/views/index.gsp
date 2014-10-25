@@ -21,6 +21,7 @@
 	<div class="basic">basic functionality:</div>
 	<div class="import">import a file:</div>
 	<div class="require">require a file:</div>
+	<div class="subfolder">require file from subfolder:</div>
 	<div class="tux">sample image dimensions:</div>
 </body>
 </html>

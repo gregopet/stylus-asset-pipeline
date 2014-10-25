@@ -133,8 +133,9 @@ class StylusJSCompiler {
 	/**
 	 * Read a text file using the specified encoding and return it as a String.
 	 */
-	static String readTextFile(File file, String encoding) {
-		log.trace "Reading contents of text file (opened via file ${file})"
+	static String readTextFile(String existingPath, String encoding, NativeArray paths) {
+		log.trace "Reading contents of text file (opened via existing path ${existingPath})"
+		def file = getExistingFile(existingPath, paths)
 		file.getText(encoding)
 	}
 
@@ -143,9 +144,9 @@ class StylusJSCompiler {
 	 * If position or length are defined, read only part of the file; else read the entire thing.
 	 * HACK: to be fully compliant the function should return the number of bytes read but it does not seem to matter for now!
 	 */
-	static NativeArray readFile(File file, Integer position, Integer length, NativeArray sampleArray) {
-		log.trace "Reading contents of binary file (opened via the File instance file)"
-		
+	static NativeArray readFile(String existingPath, Integer position, Integer length, NativeArray paths) {
+		log.trace "Reading contents of binary file (opened via the existingPath ${existingPath})"
+		def file = getExistingFile(existingPath, paths)
 		def buffer
 		if (position || length) {
 			buffer = new byte[length]
@@ -159,16 +160,16 @@ class StylusJSCompiler {
 		
 		def unsignedByteArray = buffer.collect { it & 0xFF }.toArray()
 		def returnArray = new NativeArray(unsignedByteArray)
-		returnArray.prototype = sampleArray.prototype
+		returnArray.prototype = paths.prototype
 		return returnArray
 	}
 
 	/**
 	 * Finds an asset URI in the local folders.
 	 * TODO: support wildcard searches as defined in the Stylus documentation.
-	 * @return An array of File objects.
+	 * @return An array of found path strings.
 	 */
-	static NativeArray resolveUri(String path, NativeArray paths) {
+	static NativeArray resolveUri(String path, NativeArray paths, Boolean includeFullPath = false) {
 		log.trace "Resolving asset(s) by path: $path"
 		def assetFile = threadLocal.get();
 		log.debug "resolveUri: path=${path}"
@@ -182,13 +183,34 @@ class StylusJSCompiler {
 				if (assetFile) {
 					CacheManager.addCacheDependency(assetFile.file.canonicalPath, file)
 				}
-				foundFiles << file.canonicalPath
+				foundFiles << (includeFullPath ? file.canonicalPath : path)
 			}
 		}
 		
-		def array = new NativeArray(foundFiles.collect{new File(it)}.toArray())
+		def array = new NativeArray(foundFiles.toArray())
 		array.prototype = paths.prototype
 		return array
+	}
+	
+	/**
+	 * Opens a File instance for a known existing path.
+	 */
+	static File getExistingFile(String existingPath, NativeArray paths) {
+		def hits = resolveUri(existingPath, paths, true)
+		if (!hits.length) throw new RuntimeException("File $existingPath was expected to exist but it was not found!")
+		else return new File(hits.get(0))
+	}
+	
+	/**
+	 * Returns enough information about a file to construct a fStat-like structure.
+	 */
+	static def fStat(String existingPath, NativeArray paths) {
+		def file = getExistingFile(existingPath, paths)
+		[
+			isFile : file.isFile(),
+			mtime : file.lastModified(),
+			size : file.length()
+		]
 	}
 
 	def relativePath(file, includeFileName = false) {

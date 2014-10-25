@@ -11511,7 +11511,7 @@ exports.lookup = function(targetPath, paths, ignore, resolveURL){
   // Absolute
   if (exports.absolute(targetPath)) {
     try {
-      // fs.statSync(targetPath);
+      fs.statSync(targetPath);
       return targetPath;
     } catch (err) {
       // Ignore, continue on
@@ -11526,7 +11526,7 @@ exports.lookup = function(targetPath, paths, ignore, resolveURL){
     try {
       lookup = method(paths[i], targetPath);
       if (ignore == lookup) continue;
-      // fs.statSync(lookup);
+      fs.statSync(lookup);
       return lookup;
     } catch (err) {
       // Ignore

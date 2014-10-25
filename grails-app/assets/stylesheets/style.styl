@@ -1,6 +1,5 @@
 @require "requires"
 @import "imports"
-@require "subfolder/subfolder"
 
 .basic::after
 	content: 'OK'
@@ -9,3 +8,8 @@
 .tux::after
 	content: \"image-size('tux.png')\"
 	color: green
+
+//unfortunately, loading of the image two lines above will fail if the 
+//require is at the beginning of the file :(
+//TODO: need to determine where the problems are
+@require "subfolder/subfolder"

@@ -4,6 +4,7 @@
 	<meta charset="UTF-8">
 	<title>Asset Pipeline Stylus plugin</title>
 	<asset:stylesheet href="style.css"/>
+	<asset:stylesheet href="error.css" />
 	<style>
 		body>* {
 			width: 300px

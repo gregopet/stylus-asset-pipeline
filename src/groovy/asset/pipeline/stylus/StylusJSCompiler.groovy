@@ -13,6 +13,9 @@ import asset.pipeline.AssetFile
 import asset.pipeline.AssetHelper
 import asset.pipeline.CacheManager
 
+/**
+ * Compiles Stylus files into .css for the asset pipeline.
+ */
 @Log4j
 class StylusJSCompiler {
 	public static final ThreadLocal threadLocal = new ThreadLocal();
@@ -241,14 +244,15 @@ class StylusJSCompiler {
 	}
 }
 
-// Apply this trait to custom exceptions to use them as flow control,
-// e.g. class CheapException extends RuntimeException implements NoStackTraceException{}
 trait NoStackTraceException {
 	Throwable fillInStackTrace() {
 		return this
 	}
 }
-
+/*
+ * An exception to throw when the problem rests solely in user's Stylus file and doesn't
+ * need to see the Java strack trace as well.
+ */
 class StylusException extends RuntimeException implements NoStackTraceException {
 	String stylusStackTrace
 	

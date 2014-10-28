@@ -56,10 +56,10 @@ class StylusJSCompiler {
 	def evaluateJavascript(context, resource) {
 		def inputStream = resource.inputStream
 		context.evaluateReader(globalScope, new InputStreamReader(inputStream, 'UTF-8'), resource.filename, 0, null)
-
 	}
 
 	public def process (String input, AssetFile assetFile) {
+		def compileErrors = [:] //store Stylus compilation errors into this object!
 		try {
 			if (!this.precompilerMode) {
 				threadLocal.set(assetFile);
@@ -88,19 +88,17 @@ class StylusJSCompiler {
 				def compileScope = cx.newObject(globalScope)
 				compileScope.setParentScope(globalScope)
 				compileScope.put("stylusSrc", compileScope, input)
-				compileScope.put("sourceFile", compileScope, '')
-				def result = cx.evaluateString(compileScope, "compile(stylusSrc, sourceFile, ${pathstext})", "Stylus compile command", 0, null)
-				return result
+				compileScope.put("sourceFile", compileScope, assetFile.file.name)
+				compileScope.put("errors", compileScope, compileErrors)
+				def result = cx.evaluateString(compileScope, "compile(stylusSrc, sourceFile, ${pathstext}, errors)", "Stylus compile command", 0, null)
+				if (result instanceof String) {
+					return result
+				}
 			} finally {
 				Context.exit()
 			}
 		} catch (JavaScriptException e) {
-			def errorMeta =  e.value
-
-			def errorDetails = "Stylus Engine Compiler Failed - ${assetFile.file.name}.\n"
-			if (precompilerMode) {
-				errorDetails += "**Did you mean to compile this file individually (check docs on exclusion)?**\n"
-			}
+			def errorDetails = "Stylus Engine Compiler Crashed - ${assetFile.file.name}.\n"
 			errorDetails += e.scriptStackTrace
 			if (errorMeta && errorMeta.get('message')) {
 
@@ -114,20 +112,17 @@ class StylusJSCompiler {
 			} else {
 				throw new Exception(errorDetails, e)
 			}
-		}
-		catch (RhinoException e) {
-			log.error  "RHINO EXCEPTION\n " + e.scriptStackTrace
-			throw new Exception("""
-				Stylus Engine compilation of Stylus to CSS failed.
-				$e
-				""")
 		} catch (Exception e) {
-			println "CAUGHT EXCEPTION OF TYPE " + e.getClass()
 			throw new Exception("""
 				Stylus Engine compilation of Stylus to CSS failed.
 				$e
 				""")
 		}
+		
+		//if we got to here then Stylus encountered a parse error and handled it internally
+		String errorMessage = compileErrors.sort().collect { k, v -> "${k.padLeft(20)} : $v" }.join('\n')
+		log.error "Stylus compiler encountered an error!: \n" + errorMessage
+		throw new StylusException("Stylus compiler encountered an error!", compileErrors.message)
 	}
 
 	/**
@@ -244,5 +239,22 @@ class StylusJSCompiler {
 		}
 		
 		return path.join(AssetHelper.DIRECTIVE_FILE_SEPARATOR)
+	}
+}
+
+// Apply this trait to custom exceptions to use them as flow control,
+// e.g. class CheapException extends RuntimeException implements NoStackTraceException{}
+trait NoStackTraceException {
+	Throwable fillInStackTrace() {
+		return this
+	}
+}
+
+class StylusException extends RuntimeException implements NoStackTraceException {
+	String stylusStackTrace
+	
+	StylusException(String m, String stackTrace) {
+		super(m)
+		stylusStackTrace = stackTrace
 	}
 }

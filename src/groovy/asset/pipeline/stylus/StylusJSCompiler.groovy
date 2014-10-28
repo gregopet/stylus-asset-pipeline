@@ -120,8 +120,7 @@ class StylusJSCompiler {
 		}
 		
 		//if we got to here then Stylus encountered a parse error and handled it internally
-		String errorMessage = compileErrors.sort().collect { k, v -> "${k.padLeft(20)} : $v" }.join('\n')
-		log.error "Stylus compiler encountered an error!: \n" + errorMessage
+		log.error "Stylus compiler encountered an error in file: " + compileErrors.message
 		throw new StylusException("Stylus compiler encountered an error!", compileErrors.message)
 	}
 

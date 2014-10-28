@@ -9,9 +9,7 @@ var compile = function(fileText, sourceFile, paths, errors) {
 	globalPaths = paths
 	
 	var parsed
-	stylus(fileText)
-		.set('filename', sourceFile)
-		.render(function (err, str) {
+	stylus.render(fileText, { filename: sourceFile, linenos: true }, function(err, str) {
 			parsed = str
 			
 			if (err) {

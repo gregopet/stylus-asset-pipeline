@@ -24,29 +24,30 @@ class StylusJSCompiler {
 		this.precompilerMode = precompiler ? true : false
 		
 		try {
-		classLoader = getClass().getClassLoader()
+			classLoader = getClass().getClassLoader()
 
-		def shellJsResource = new ClassPathResource('asset/pipeline/stylus/shell.js', classLoader)
-		def envRhinoJsResource = new ClassPathResource('asset/pipeline/stylus/env.rhino.js', classLoader)
-		def hooksJsResource = new ClassPathResource('asset/pipeline/stylus/hooks.js', classLoader)
-		def fileSupportResource = new ClassPathResource('asset/pipeline/stylus/fileFuncs.js', classLoader)
-		def stylusJsResource = new ClassPathResource('asset/pipeline/stylus/stylus.js', classLoader)
-		def compileJsResource = new ClassPathResource('asset/pipeline/stylus/compile.js', classLoader)
-		
-		Context cx = Context.enter()
-		try {
-			cx.setOptimizationLevel(-1)
-			globalScope = cx.initStandardObjects()
-			this.evaluateJavascript(cx, shellJsResource)
-			this.evaluateJavascript(cx, envRhinoJsResource)
-			this.evaluateJavascript(cx, hooksJsResource)
-			this.evaluateJavascript(cx, fileSupportResource)
-			this.evaluateJavascript(cx, stylusJsResource)
-			this.evaluateJavascript(cx, compileJsResource)
-		} finally {
-			Context.exit()
-		}
-
+			def shellJsResource = new ClassPathResource('asset/pipeline/stylus/shell.js', classLoader)
+			def envRhinoJsResource = new ClassPathResource('asset/pipeline/stylus/env.rhino.js', classLoader)
+			def hooksJsResource = new ClassPathResource('asset/pipeline/stylus/hooks.js', classLoader)
+			def fileSupportResource = new ClassPathResource('asset/pipeline/stylus/fileFuncs.js', classLoader)
+			def stylusJsResource = new ClassPathResource('asset/pipeline/stylus/stylus.js', classLoader)
+			def compileJsResource = new ClassPathResource('asset/pipeline/stylus/compile.js', classLoader)
+			
+			Context cx = Context.enter()
+			try {
+				cx.setOptimizationLevel(-1)
+				globalScope = cx.initStandardObjects()
+				this.evaluateJavascript(cx, shellJsResource)
+				this.evaluateJavascript(cx, envRhinoJsResource)
+				this.evaluateJavascript(cx, hooksJsResource)
+				this.evaluateJavascript(cx, fileSupportResource)
+				this.evaluateJavascript(cx, stylusJsResource)
+				this.evaluateJavascript(cx, compileJsResource)
+			} finally {
+				Context.exit()
+			}
+		} catch (JavaScriptException e) {
+			throw new Exception("Stylus Engine initialization failed: ${e.message}\n ${e.scriptStackTrace}")
 		} catch (Exception e) {
 			throw new Exception("Stylus Engine initialization failed.", e)
 		}

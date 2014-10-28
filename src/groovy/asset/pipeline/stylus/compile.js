@@ -1,34 +1,32 @@
-// Prevent a Rhino exception
-Error.captureStackTrace = function(context, error) { 
-  //throw new Error(error);
-};
+// Prevent Rhino exceptions by stubbing a V8 function.
+Error.captureStackTrace = function(context, error) { };
 
-var compile = function(fileText, sourceFile, paths) {
-	
-	//set global paths for looking for files
+/**
+ * Compiles a unit of Stylus code.
+ * @param fileText Contents of the file we're parsing
+ * @param sourceFile Name of the source file so it will be included in error reports
+ * @param paths A variable that holds Asset Pipeline's paths when we have to do lookups
+ * @param errors An empty object into which potential parsing errors will be fed
+ * @return A string containing the CSS if the compilation was successful or null in case of errors
+ */
+var compile = function(fileText, sourceFile, paths, errors) {
+	//put paths into a global variable which is used in fileFuncs.js
+	//TODO: avoid setting a global variable! Either don't pass the paths through Javascript at all
+	//or construct a FS object containing it and inject it into Stylus!
 	globalPaths = paths
 	
 	var parsed
-	stylus(fileText)
-		.set('filename', sourceFile)
-		.include('path')
-		.render(function (err, str) {
+	stylus.render(fileText, { filename: sourceFile, linenos: true }, function(err, str) {
 			parsed = str
 			
 			if (err) {
-				//Packages.asset.pipeline.stylus.StylusJSCompiler.print('ERRORS OBJECT:')
-				//for (var x in err) {
-				//	Packages.asset.pipeline.stylus.StylusJSCompiler.print('' + x + ": " + err[x])
-				//}
-				Packages.asset.pipeline.stylus.StylusJSCompiler.print("Error parsing Stylus file: \n" + err.message);
-				//Packages.asset.pipeline.stylus.StylusJSCompiler.print("(in line): " + errors.lineno);
-				//Packages.asset.pipeline.stylus.StylusJSCompiler.print("(in file): " + errors.filename);
-				//java.lang.System.out.println(stylus.utils.formatException(errors))
-				//java.lang.System.out.println("-------------------")
-				throw err;
+				//store object errors into the Java object passed into the function
+				var standardObject = {}
+				for (var x in err) {
+					errors.put(x, err[x])
+				}
 			}
 		}
 	)
-	
 	return parsed;
 };

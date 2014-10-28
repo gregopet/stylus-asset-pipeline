@@ -12734,7 +12734,7 @@ Evaluator.prototype.visit = function(node){
     err.filename = node.filename;
     err.stylusStack = this.stack.toString();
     try {
-      // err.input = fs.readFileSync(err.filename, 'utf8');
+      err.input = fs.readFileSync(err.filename, 'utf8');
     } catch (err) {
       // ignore
     }

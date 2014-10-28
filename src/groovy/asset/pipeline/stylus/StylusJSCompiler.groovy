@@ -13,6 +13,9 @@ import asset.pipeline.AssetFile
 import asset.pipeline.AssetHelper
 import asset.pipeline.CacheManager
 
+/**
+ * Compiles Stylus files into .css for the asset pipeline.
+ */
 @Log4j
 class StylusJSCompiler {
 	public static final ThreadLocal threadLocal = new ThreadLocal();
@@ -24,29 +27,30 @@ class StylusJSCompiler {
 		this.precompilerMode = precompiler ? true : false
 		
 		try {
-		classLoader = getClass().getClassLoader()
+			classLoader = getClass().getClassLoader()
 
-		def shellJsResource = new ClassPathResource('asset/pipeline/stylus/shell.js', classLoader)
-		def envRhinoJsResource = new ClassPathResource('asset/pipeline/stylus/env.rhino.js', classLoader)
-		def hooksJsResource = new ClassPathResource('asset/pipeline/stylus/hooks.js', classLoader)
-		def fileSupportResource = new ClassPathResource('asset/pipeline/stylus/fileFuncs.js', classLoader)
-		def stylusJsResource = new ClassPathResource('asset/pipeline/stylus/stylus.js', classLoader)
-		def compileJsResource = new ClassPathResource('asset/pipeline/stylus/compile.js', classLoader)
-		
-		Context cx = Context.enter()
-		try {
-			cx.setOptimizationLevel(-1)
-			globalScope = cx.initStandardObjects()
-			this.evaluateJavascript(cx, shellJsResource)
-			this.evaluateJavascript(cx, envRhinoJsResource)
-			this.evaluateJavascript(cx, hooksJsResource)
-			this.evaluateJavascript(cx, fileSupportResource)
-			this.evaluateJavascript(cx, stylusJsResource)
-			this.evaluateJavascript(cx, compileJsResource)
-		} finally {
-			Context.exit()
-		}
-
+			def shellJsResource = new ClassPathResource('asset/pipeline/stylus/shell.js', classLoader)
+			def envRhinoJsResource = new ClassPathResource('asset/pipeline/stylus/env.rhino.js', classLoader)
+			def hooksJsResource = new ClassPathResource('asset/pipeline/stylus/hooks.js', classLoader)
+			def fileSupportResource = new ClassPathResource('asset/pipeline/stylus/fileFuncs.js', classLoader)
+			def stylusJsResource = new ClassPathResource('asset/pipeline/stylus/stylus.js', classLoader)
+			def compileJsResource = new ClassPathResource('asset/pipeline/stylus/compile.js', classLoader)
+			
+			Context cx = Context.enter()
+			try {
+				cx.setOptimizationLevel(-1)
+				globalScope = cx.initStandardObjects()
+				this.evaluateJavascript(cx, shellJsResource)
+				this.evaluateJavascript(cx, envRhinoJsResource)
+				this.evaluateJavascript(cx, hooksJsResource)
+				this.evaluateJavascript(cx, fileSupportResource)
+				this.evaluateJavascript(cx, stylusJsResource)
+				this.evaluateJavascript(cx, compileJsResource)
+			} finally {
+				Context.exit()
+			}
+		} catch (JavaScriptException e) {
+			throw new Exception("Stylus Engine initialization failed: ${e.message}\n ${e.scriptStackTrace}")
 		} catch (Exception e) {
 			throw new Exception("Stylus Engine initialization failed.", e)
 		}
@@ -55,10 +59,10 @@ class StylusJSCompiler {
 	def evaluateJavascript(context, resource) {
 		def inputStream = resource.inputStream
 		context.evaluateReader(globalScope, new InputStreamReader(inputStream, 'UTF-8'), resource.filename, 0, null)
-
 	}
 
 	public def process (String input, AssetFile assetFile) {
+		def compileErrors = [:] //store Stylus compilation errors into this object!
 		try {
 			if (!this.precompilerMode) {
 				threadLocal.set(assetFile);
@@ -87,19 +91,17 @@ class StylusJSCompiler {
 				def compileScope = cx.newObject(globalScope)
 				compileScope.setParentScope(globalScope)
 				compileScope.put("stylusSrc", compileScope, input)
-				compileScope.put("sourceFile", compileScope, '')
-				def result = cx.evaluateString(compileScope, "compile(stylusSrc, sourceFile, ${pathstext})", "Stylus compile command", 0, null)
-				return result
+				compileScope.put("sourceFile", compileScope, assetFile.file.name)
+				compileScope.put("errors", compileScope, compileErrors)
+				def result = cx.evaluateString(compileScope, "compile(stylusSrc, sourceFile, ${pathstext}, errors)", "Stylus compile command", 0, null)
+				if (result instanceof String) {
+					return result
+				}
 			} finally {
 				Context.exit()
 			}
 		} catch (JavaScriptException e) {
-			def errorMeta =  e.value
-
-			def errorDetails = "Stylus Engine Compiler Failed - ${assetFile.file.name}.\n"
-			if (precompilerMode) {
-				errorDetails += "**Did you mean to compile this file individually (check docs on exclusion)?**\n"
-			}
+			def errorDetails = "Stylus Engine Compiler Crashed - ${assetFile.file.name}.\n"
 			errorDetails += e.scriptStackTrace
 			if (errorMeta && errorMeta.get('message')) {
 
@@ -113,20 +115,16 @@ class StylusJSCompiler {
 			} else {
 				throw new Exception(errorDetails, e)
 			}
-		}
-		catch (RhinoException e) {
-			log.error  "RHINO EXCEPTION\n " + e.scriptStackTrace
-			throw new Exception("""
-				Stylus Engine compilation of Stylus to CSS failed.
-				$e
-				""")
 		} catch (Exception e) {
-			println "CAUGHT EXCEPTION OF TYPE " + e.getClass()
 			throw new Exception("""
 				Stylus Engine compilation of Stylus to CSS failed.
 				$e
 				""")
 		}
+		
+		//if we got to here then Stylus encountered a parse error and handled it internally
+		log.error "Stylus compiler encountered an error in file: " + compileErrors.message
+		throw new StylusException("Stylus compiler encountered an error!", compileErrors.message)
 	}
 
 	/**
@@ -243,5 +241,23 @@ class StylusJSCompiler {
 		}
 		
 		return path.join(AssetHelper.DIRECTIVE_FILE_SEPARATOR)
+	}
+}
+
+trait NoStackTraceException {
+	Throwable fillInStackTrace() {
+		return this
+	}
+}
+/*
+ * An exception to throw when the problem rests solely in user's Stylus file and doesn't
+ * need to see the Java strack trace as well.
+ */
+class StylusException extends RuntimeException implements NoStackTraceException {
+	String stylusStackTrace
+	
+	StylusException(String m, String stackTrace) {
+		super(m)
+		stylusStackTrace = stackTrace
 	}
 }

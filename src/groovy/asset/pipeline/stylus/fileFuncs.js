@@ -91,5 +91,9 @@ var fs = {
 	closeSync : function(existingPath) {
 		//java.lang.System.out.println("closeSync CALLED FOR FILE " + existingPath)
 		return true //NOT IMPLEMENTED
+	},
+	realpathSync: function(filename) {
+		//java.lang.System.out.println("REALPATH CALLED FOR " + filename)
+		return filename
 	}
 }

@@ -24,5 +24,7 @@
 	<div class="require">require a file:</div>
 	<div class="subfolder">require file from subfolder:</div>
 	<div class="tux">sample image dimensions:</div>
+	<div class="built-in">built-in function example:</div>
+	<div class="background-image">background image using url(..):</div>
 </body>
 </html>

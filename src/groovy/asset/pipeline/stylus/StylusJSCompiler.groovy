@@ -22,6 +22,7 @@ class StylusJSCompiler {
 	Scriptable globalScope
 	ClassLoader classLoader
 	def precompilerMode
+	static final String builtInFunctionsIdentifier = "STYLUS-BUILT-IN-FUNCTIONS.styl"
 
 	StylusJSCompiler(precompiler = false) {
 		this.precompilerMode = precompiler ? true : false
@@ -92,8 +93,9 @@ class StylusJSCompiler {
 				compileScope.setParentScope(globalScope)
 				compileScope.put("stylusSrc", compileScope, input)
 				compileScope.put("sourceFile", compileScope, assetFile.file.name)
+				compileScope.put("bifs", compileScope, builtInFunctionsIdentifier)
 				compileScope.put("errors", compileScope, compileErrors)
-				def result = cx.evaluateString(compileScope, "compile(stylusSrc, sourceFile, ${pathstext}, errors)", "Stylus compile command", 0, null)
+				def result = cx.evaluateString(compileScope, "compile(stylusSrc, sourceFile, ${pathstext}, bifs, errors)", "Stylus compile command", 0, null)
 				if (result instanceof String) {
 					return result
 				}
@@ -138,6 +140,12 @@ class StylusJSCompiler {
 	 * Read a text file using the specified encoding and return it as a String.
 	 */
 	static String readTextFile(String existingPath, String encoding, NativeArray paths) {
+		// Handle a request for the built-in functions which are located in the resources
+		if (existingPath == builtInFunctionsIdentifier) {
+			def builtInFunctions = new ClassPathResource('asset/pipeline/stylus/built-in-functions.styl', (ClassLoader)getClass().getClassLoader())
+			return builtInFunctions.inputStream.text
+		}
+	
 		log.trace "Reading contents of text file (opened via existing path ${existingPath})"
 		def file = getExistingFile(existingPath, paths)
 		file.getText(encoding)
@@ -174,6 +182,14 @@ class StylusJSCompiler {
 	 * @return An array of found path strings.
 	 */
 	static NativeArray resolveUri(String path, NativeArray paths, Boolean includeFullPath = false) {
+		//handle the built in functions which are provided as a separate file
+		if (path == builtInFunctionsIdentifier) {
+			log.trace "'found' the native functions file"
+			def array = new NativeArray([builtInFunctionsIdentifier].toArray())
+			array.prototype = paths.prototype
+			return array
+		}
+		
 		log.trace "Resolving asset(s) by path: $path"
 		def assetFile = threadLocal.get();
 		log.debug "resolveUri: path=${path}"

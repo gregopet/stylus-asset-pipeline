@@ -11021,18 +11021,18 @@ Renderer.prototype.define = function(name, fn, raw){
   return this;
 };
 
-// /**
-//  * Import the given `file`.
-//  *
-//  * @param {String} file
-//  * @return {Renderer} for chaining
-//  * @api public
-//  */
-// 
-// Renderer.prototype.import = function(file){
-//   this.options.imports.push(file);
-//   return this;
-// };
+/**
+ * Import the given `file`.
+ *
+ * @param {String} file
+ * @return {Renderer} for chaining
+ * @api public
+*/
+ 
+Renderer.prototype.import = function(file){
+  this.options.imports.push(file);
+  return this;
+};
 
 
 
@@ -11380,6 +11380,7 @@ exports.Compiler = require('./visitor/compiler');
 
 exports.render = function(str, options, fn){
   if ('function' == typeof options) fn = options, options = {};
+  //if (bifs) str = bifs + str;
   return new Renderer(str, options).render(fn);
 };
 
@@ -11393,7 +11394,7 @@ exports.render = function(str, options, fn){
  */
 
 function render(str, options) {
-  if (bifs) str = bifs + str;
+  //if (bifs) str = bifs + str;
   return new Renderer(str, options);
 }
 

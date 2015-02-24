@@ -7,6 +7,7 @@ import org.mozilla.javascript.RhinoException
 import org.mozilla.javascript.JavaScriptException
 import org.mozilla.javascript.NativeArray
 import org.mozilla.javascript.Scriptable
+import org.mozilla.javascript.NativeObject
 import org.springframework.core.io.ClassPathResource
 
 import asset.pipeline.AssetFile
@@ -227,11 +228,13 @@ class StylusJSCompiler {
 	static def fStat(String existingPath, NativeArray paths) {
 		def file = getExistingFile(existingPath, paths)
 		if (!file) return null
-		else return [
-			isFile : file.isFile(),
-			mtime : file.lastModified(),
-			size : file.length()
-		]
+		else {
+			def returnObject = new NativeObject()
+			returnObject.put("isFile", returnObject, file.isFile());
+			returnObject.put("mtime", returnObject, file.lastModified());
+			returnObject.put("fsize", returnObject, file.length());
+			return returnObject
+		}
 	}
 
 	def relativePath(file, includeFileName = false) {

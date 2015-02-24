@@ -33,10 +33,12 @@ var fStatSync = function(existingPath) {
 	var descriptor = Packages.asset.pipeline.stylus.StylusJSCompiler.fStat(existingPath, globalPaths)
 	//java.lang.System.out.println("fstatSync (internal) GOT OBJECT " + descriptor);
 	if (!descriptor) throw "File " + existingPath + " not found!"
-	else return {
-		isFile: function() { return descriptor.isFile },
-		mtime: new Date( descriptor.mtime ),
-		size : descriptor.size
+	else {
+		return {
+			isFile: function() { return descriptor.isFile },
+			mtime: new Date( descriptor.mtime ),
+			size : descriptor.fsize
+		}
 	}
 }
 

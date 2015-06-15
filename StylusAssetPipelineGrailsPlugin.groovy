@@ -2,7 +2,7 @@ import asset.pipeline.AssetHelper
 import asset.pipeline.stylus.StylusAssetFile
 
 class StylusAssetPipelineGrailsPlugin {
-	def version = "0.8.4"
+	def version = "0.8.5"
 	def grailsVersion = "2.0 > *"
 
 	def title = "Stylus Asset Pipeline Plugin"
@@ -18,6 +18,6 @@ Provides Stylus support for the asset-pipeline static asset management plugin.''
 	def scm = [ url: "http://github.com/gregopet/stylus-asset-pipeline" ]
 	
 	def doWithDynamicMethods = { ctx ->
-		AssetHelper.assetSpecs << StylusAssetFile
+		
 	}
 }

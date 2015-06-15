@@ -69,34 +69,15 @@ class StylusJSCompiler {
 			if (!this.precompilerMode) {
 				threadLocal.set(assetFile);
 			}
-			def assetRelativePath = relativePath(assetFile.file)
-			// def paths = AssetHelper.scopedDirectoryPaths(new File("grails-app/assets").getAbsolutePath())
-
-			// paths += [assetFile.file.getParent()]
-			def paths = AssetHelper.getAssetPaths()
-			def relativePaths = paths.collect { [it, assetRelativePath].join(AssetHelper.DIRECTIVE_FILE_SEPARATOR) }
-			// println paths
-			paths = relativePaths + paths
-
-
-			def pathstext = paths.collect {
-				def p = it.replaceAll("\\\\", "/")
-				if (p.endsWith("/")) {
-				"'${p}'"
-				} else {
-				"'${p}/'"
-				}
-			}.toString()
-			
 			def cx = Context.enter()
 			try {
 				def compileScope = cx.newObject(globalScope)
 				compileScope.setParentScope(globalScope)
 				compileScope.put("stylusSrc", compileScope, input)
-				compileScope.put("sourceFile", compileScope, assetFile.file.name)
+				compileScope.put("sourceFile", compileScope, assetFile.name)
 				compileScope.put("bifs", compileScope, builtInFunctionsIdentifier)
 				compileScope.put("errors", compileScope, compileErrors)
-				def result = cx.evaluateString(compileScope, "compile(stylusSrc, sourceFile, ${pathstext}, bifs, errors)", "Stylus compile command", 0, null)
+				def result = cx.evaluateString(compileScope, "compile(stylusSrc, sourceFile, bifs, errors)", "Stylus compile command", 0, null)
 				if (result instanceof String) {
 					return result
 				}
@@ -104,7 +85,7 @@ class StylusJSCompiler {
 				Context.exit()
 			}
 		} catch (JavaScriptException e) {
-			def errorDetails = "Stylus Engine Compiler Crashed - ${assetFile.file.name}.\n"
+			def errorDetails = "Stylus Engine Compiler Crashed - ${assetFile.name}.\n"
 			errorDetails += e.scriptStackTrace
 			if (errorMeta && errorMeta.get('message')) {
 
@@ -119,10 +100,7 @@ class StylusJSCompiler {
 				throw new Exception(errorDetails, e)
 			}
 		} catch (Exception e) {
-			throw new Exception("""
-				Stylus Engine compilation of Stylus to CSS failed.
-				$e
-				""")
+			throw new Exception("Stylus Engine compilation of Stylus to CSS failed.", e)
 		}
 		
 		//if we got to here then Stylus encountered a parse error and handled it internally
@@ -147,9 +125,8 @@ class StylusJSCompiler {
 			return builtInFunctions.inputStream.text
 		}
 	
-		log.trace "Reading contents of text file (opened via existing path ${existingPath})"
-		def file = getExistingFile(existingPath, paths)
-		file.getText(encoding)
+		def existingFile = AssetHelper.fileForFullName(existingPath)
+		return existingFile.inputStream.getText(encoding)
 	}
 
 	/**
@@ -158,15 +135,14 @@ class StylusJSCompiler {
 	 * HACK: to be fully compliant the function should return the number of bytes read but it does not seem to matter for now!
 	 */
 	static NativeArray readFile(String existingPath, Integer position, Integer length, NativeArray paths) {
-		log.trace "Reading contents of binary file (opened via the existingPath ${existingPath})"
-		def file = getExistingFile(existingPath, paths)
 		def buffer
+		
+		def file = AssetHelper.fileForFullName(existingPath)
 		if (position || length) {
-			buffer = new byte[length]
-			file.withInputStream { InputStream stream -> 
-				stream.skip(position)
-				stream.read(buffer, 0, length)
-			}
+			buffer = new byte[position + length]
+			//file.inputStream.skip(position) <-- does not work for some reason
+			file.inputStream.read(buffer, 0, position + length)
+			buffer = buffer[position..<position+length]
 		} else {
 			buffer = file.bytes
 		}
@@ -182,36 +158,32 @@ class StylusJSCompiler {
 	 * TODO: support wildcard searches as defined in the Stylus documentation.
 	 * @return An array of found path strings.
 	 */
-	static NativeArray resolveUri(String path, NativeArray paths, Boolean includeFullPath = false) {
+	 static NativeArray resolveUri(String path, NativeArray paths, Boolean includeFullPath = false) {
 		//handle the built in functions which are provided as a separate file
 		if (path == builtInFunctionsIdentifier) {
-			log.trace "'found' the native functions file"
+			//log.trace "'found' the native functions file"
 			def array = new NativeArray([builtInFunctionsIdentifier].toArray())
 			array.prototype = paths.prototype
 			return array
 		}
-		
-		log.trace "Resolving asset(s) by path: $path"
+		def fileName = AssetHelper.nameWithoutExtension(path)
 		def assetFile = threadLocal.get();
-		log.debug "resolveUri: path=${path}"
-		def foundFiles = new HashSet()
-		for (Object index : paths.getIds()) {
-			def it = paths.get(index, null)
-			def file = new File(it, path)
-			log.trace "test exists: ${file}"
-			if (file.exists()) {
-				log.trace "found file: ${file}"
-				if (assetFile) {
-					CacheManager.addCacheDependency(assetFile.file.canonicalPath, file)
-				}
-				foundFiles << (includeFullPath ? file.canonicalPath : path)
-			}
+		def newFile = AssetHelper.fileForFullName(path)
+		
+		if (newFile) {
+			CacheManager.addCacheDependency(assetFile.path, newFile)
+			def file = new NativeArray([newFile.path ?: path] as Object[])
+			file.prototype = paths.prototype
+			//log.trace "resolveUri: found file $path, $paths"
+			return file
 		}
 		
-		def array = new NativeArray(foundFiles.toArray())
-		array.prototype = paths.prototype
-		return array
-	}
+		//log.trace "resolveUri: could not find file $path, $paths"
+		
+		def emptyArray = new NativeArray()
+		emptyArray.prototype = paths.prototype
+		return emptyArray
+    }
 	
 	/**
 	 * Opens a File instance for a known existing path.
@@ -224,6 +196,8 @@ class StylusJSCompiler {
 	
 	/**
 	 * Returns enough information about a file to construct a fStat-like structure.
+	 * WARNING: this function no longer works properly as asset pipeline no longer gives
+	 * access to absolute files. It doesn't seem to bother Stylus, though.
 	 */
 	static def fStat(String existingPath, NativeArray paths) {
 		def file = getExistingFile(existingPath, paths)
@@ -235,31 +209,6 @@ class StylusJSCompiler {
 			returnObject.put("fsize", returnObject, file.length());
 			return returnObject
 		}
-	}
-
-	def relativePath(file, includeFileName = false) {
-		def path
-		if (includeFileName) {
-		path = file.class.name == 'java.io.File' ? file.getCanonicalPath().split(AssetHelper.QUOTED_FILE_SEPARATOR) : file.file.getCanonicalPath().split(AssetHelper.QUOTED_FILE_SEPARATOR)
-		} else {
-		path = file.getParent().split(AssetHelper.QUOTED_FILE_SEPARATOR)
-		}
-
-		def startPosition = path.findLastIndexOf { it == "grails-app" }
-		if (startPosition == -1) {
-		startPosition = path.findLastIndexOf { it == 'web-app' }
-		if (startPosition + 2 >= path.length) {
-			return ""
-		}
-		path = path[(startPosition + 2)..-1]
-		} else {
-		if (startPosition + 3 >= path.length) {
-			return ""
-		}
-		path = path[(startPosition + 3)..-1]
-		}
-		
-		return path.join(AssetHelper.DIRECTIVE_FILE_SEPARATOR)
 	}
 }
 
